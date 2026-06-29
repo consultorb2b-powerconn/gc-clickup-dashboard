@@ -1,5 +1,4 @@
 /* app.js — lê metrics.json (gerado pela Action) e desenha o painel. Sem backend. */
-
 const brl = (n) => "R$ " + (n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const brlShort = (n) => (n >= 1000 ? "R$ " + (n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "k" : brl(n));
 const corLista = (c) => (c === "cpfl" ? "f-cpfl" : c === "neo" ? "f-neo" : "f-grey");
@@ -8,6 +7,9 @@ const el = (id) => document.getElementById(id);
 let periodoAtual = "mes";
 let empresaFiltro = "todas";
 let DATA = null;
+
+// rótulos do período para os KPIs temporais
+const SUFIXO = { mes: "no mês", semana: "na semana", dia: "no dia" };
 
 async function carregar() {
   el("upd").textContent = "carregando…";
@@ -27,28 +29,43 @@ async function carregar() {
 
 function render() {
   const m = DATA;
-  el("kpi-aberto").textContent = m.kpis.emAberto.toLocaleString("pt-BR");
+  const p = (m.periodos && m.periodos[periodoAtual]) || { serie: { periodo: periodoAtual, pontos: [] }, entradas: 0, saidas: 0 };
+
+  // --- KPI: em aberto (foto do agora) ---
+  el("kpi-aberto").textContent = (m.emAberto || 0).toLocaleString("pt-BR");
   el("kpi-split").innerHTML =
-    '<span><i style="background:var(--avulso)"></i>' + m.kpis.porLista.avulso + '</span>' +
-    '<span><i style="background:var(--cpfl)"></i>' + m.kpis.porLista.cpfl + '</span>' +
-    '<span><i style="background:var(--neo)"></i>' + m.kpis.porLista.neo + '</span>';
-  el("kpi-entradas").textContent = m.kpis.entradasMes.toLocaleString("pt-BR");
-  el("kpi-saidas").textContent = m.kpis.saidasMes.toLocaleString("pt-BR");
-  const saldo = m.kpis.entradasMes - m.kpis.saidasMes;
+    '<span><i style="background:var(--avulso)"></i>' + m.porLista.avulso + '</span>' +
+    '<span><i style="background:var(--cpfl)"></i>' + m.porLista.cpfl + '</span>' +
+    '<span><i style="background:var(--neo)"></i>' + m.porLista.neo + '</span>';
+
+  // --- KPIs temporais: entradas/saídas no período selecionado ---
+  const suf = SUFIXO[periodoAtual] || "";
+  el("kpi-entradas-label").textContent = "Entradas " + suf;
+  el("kpi-saidas-label").textContent = "Saídas " + suf;
+  el("kpi-entradas").textContent = (p.entradas || 0).toLocaleString("pt-BR");
+  el("kpi-saidas").textContent = (p.saidas || 0).toLocaleString("pt-BR");
+  const saldo = (p.entradas || 0) - (p.saidas || 0);
   el("kpi-saldo").textContent = (saldo >= 0 ? "saldo +" : "saldo ") + saldo + " na fila";
-  el("kpi-receber").textContent = brlShort(m.kpis.valorReceberTotal);
 
-  const serie = m.series[periodoAtual];
-  el("serie-sub").textContent = "por " + serie.periodo + " · últimos " + serie.pontos.length;
-  desenharChart(serie.pontos);
+  // --- Valor a receber (foto do agora) ---
+  const totalReceber = (m.valoresReceber.contrato || 0) + (m.valoresReceber.avulso || 0);
+  el("kpi-receber").textContent = brlShort(totalReceber);
 
+  // --- Gráfico entrada × saída (por período) ---
+  el("serie-sub").textContent = "por " + p.serie.periodo + " · últimos " + p.serie.pontos.length;
+  desenharChart(p.serie.pontos);
+
+  // --- OS por empresa (acumulado) ---
   desenharEmpresa(m.porEmpresa);
 
+  // --- Carga por técnico (foto) ---
   const maxT = Math.max(1, ...m.porTecnico.map((t) => t.total));
   el("tecnico-bars").innerHTML = m.porTecnico.map((t) => barRow(t.nome, t.total, maxT, t.nome === "Sem técnico" ? "f-grey" : "f-prim")).join("");
 
+  // --- Valores a receber (donut) ---
   desenharDonut(m.valoresReceber);
 
+  // --- Esteira (foto) ---
   const maxE = Math.max(1, ...m.esteira.map((e) => e.total));
   el("esteira").innerHTML = m.esteira.map((e) => {
     const cls = e.tipo === "closed" || e.tipo === "done" ? "done" : /aguardando|faturar|ag\. nf/i.test(e.status) ? "warn" : "";

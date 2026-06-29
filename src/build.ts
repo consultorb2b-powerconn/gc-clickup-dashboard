@@ -1,12 +1,15 @@
 /**
- * build.ts — gera public/metrics.json a partir do ClickUp.
- * Rodado pela GitHub Action a cada 30 min. Não há servidor: a página é estática
- * e lê esse JSON. O CLICKUP_TOKEN só existe dentro da Action (Secret), nunca no navegador.
+ * build.ts — roda na GitHub Action: lê o ClickUp e gera public/metrics.json.
  *
- * Gera os três períodos (dia/semana/mês) num único arquivo, pra a página
- * alternar sem precisar de backend.
+ * Estrutura gerada:
+ *   {
+ *     geradoEm,
+ *     // foto do agora (independe do período):
+ *     emAberto, porLista, porTecnico, valoresReceber, esteira, porEmpresa,
+ *     // por período (o filtro Dia/Semana/Mês escolhe qual usar):
+ *     periodos: { mes:{serie,entradas,saidas}, semana:{...}, dia:{...} }
+ *   }
  */
-
 import { writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -23,21 +26,26 @@ async function main() {
     buildMetrics("dia"),
   ]);
 
-  // Um arquivo só, com as séries dos três períodos.
+  // os campos "foto" são iguais nos três; uso os do mês.
   const out = {
     geradoEm: mes.geradoEm,
-    kpis: mes.kpis,
-    porEmpresa: mes.porEmpresa,
+    emAberto: mes.emAberto,
+    porLista: mes.porLista,
     porTecnico: mes.porTecnico,
     valoresReceber: mes.valoresReceber,
     esteira: mes.esteira,
-    series: { mes: mes.serie, semana: semana.serie, dia: dia.serie },
+    porEmpresa: mes.porEmpresa,
+    periodos: {
+      mes: { serie: mes.serie, entradas: mes.entradas, saidas: mes.saidas },
+      semana: { serie: semana.serie, entradas: semana.entradas, saidas: semana.saidas },
+      dia: { serie: dia.serie, entradas: dia.entradas, saidas: dia.saidas },
+    },
   };
 
   const dir = join(__dirname, "..", "public");
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, "metrics.json"), JSON.stringify(out), "utf8");
-  console.log(`[build] metrics.json gerado em ${out.geradoEm} — em aberto: ${out.kpis.emAberto}`);
+  console.log(`[build] metrics.json gerado em ${out.geradoEm} — em aberto: ${out.emAberto}`);
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

@@ -6,7 +6,6 @@
  *   "Data de Recebimento" (epoch ms), "Data de Saída" (epoch ms),
  *   "Valor Total OS" (moeda).
  */
-
 import { fetchAllTasks, campo, campoNum, type CuTask } from "./clickup.js";
 
 const LISTS = {
@@ -17,16 +16,12 @@ const LISTS = {
 
 /**
  * Status considerados "a receber" (serviço feito, aguardando NF/faturamento).
- * AJUSTE conforme a operação. Os de contrato vêm dos 17 status; os de avulso
- * precisam ser confirmados (nomes exatos da lista Avulso).
  */
 const STATUS_A_RECEBER = new Set(
   [
-    // contrato
     "serv. fim – ag. nf",
     "nf retorno autorizada",
     "faturar contrato",
-    // avulso (CONFIRMAR nomes reais na lista Avulso)
     "faturar avulso",
     "serv. fim - ag. nf",
   ].map((s) => s.toLowerCase()),
@@ -34,10 +29,19 @@ const STATUS_A_RECEBER = new Set(
 
 type Periodo = "dia" | "semana" | "mes";
 
-/** Uma OS finalizada quando o status é do grupo fechado/concluído. */
+/**
+ * Uma OS está FINALIZADA quando:
+ *   - o tipo do status é fechado/concluído (closed/done), OU
+ *   - o nome do status contém "finalizado" (ex.: "Finalizado Contrato",
+ *     "Finalizado / Enviado") — cobre status finalizados que o ClickUp
+ *     mantém como tipo "custom" e não marca como closed.
+ * Se houver outros nomes de status finalizados, some-os abaixo.
+ */
 function finalizada(t: CuTask): boolean {
   const tipo = t.status?.type ?? "";
-  return tipo === "closed" || tipo === "done";
+  if (tipo === "closed" || tipo === "done") return true;
+  const nome = (t.status?.status ?? "").toLowerCase();
+  return nome.includes("finalizado");
 }
 
 function dataMs(t: CuTask, nome: string): Date | null {
@@ -45,13 +49,12 @@ function dataMs(t: CuTask, nome: string): Date | null {
   return ms ? new Date(ms) : null;
 }
 
-/** Chave de período. dia=YYYY-MM-DD, mes=YYYY-MM, semana=YYYY-Www (ISO simplificado). */
+/** Chave de período. dia=YYYY-MM-DD, mes=YYYY-MM, semana=YYYY-Www. */
 function chavePeriodo(d: Date, p: Periodo): string {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
   if (p === "mes") return `${y}-${m}`;
   if (p === "dia") return `${y}-${m}-${String(d.getUTCDate()).padStart(2, "0")}`;
-  // semana (número da semana no ano, aproximado)
   const inicioAno = new Date(Date.UTC(y, 0, 1));
   const dias = Math.floor((d.getTime() - inicioAno.getTime()) / 86_400_000);
   const semana = String(Math.ceil((dias + inicioAno.getUTCDay() + 1) / 7)).padStart(2, "0");
@@ -66,18 +69,17 @@ function rotuloMes(chave: string): string {
 
 export interface Metrics {
   geradoEm: string;
-  kpis: {
-    emAberto: number;
-    porLista: { avulso: number; cpfl: number; neo: number };
-    entradasMes: number;
-    saidasMes: number;
-    valorReceberTotal: number;
-  };
-  serie: { periodo: Periodo; pontos: { chave: string; rotulo: string; entradas: number; saidas: number }[] };
-  porEmpresa: { nome: string; total: number; contrato: "cpfl" | "neo" | "avulso" }[];
+  // snapshot (independente do período)
+  emAberto: number;
+  porLista: { avulso: number; cpfl: number; neo: number };
   porTecnico: { nome: string; total: number }[];
   valoresReceber: { contrato: number; avulso: number; porStatus: { status: string; valor: number }[] };
   esteira: { status: string; total: number; tipo: string }[];
+  porEmpresa: { nome: string; total: number; contrato: "cpfl" | "neo" | "avulso" }[];
+  // dependente do período selecionado
+  serie: { periodo: Periodo; pontos: { chave: string; rotulo: string; entradas: number; saidas: number }[] };
+  entradas: number; // entradas no período atual (dia/semana/mês corrente)
+  saidas: number;   // saídas no período atual
 }
 
 export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
@@ -92,7 +94,7 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
     ...neo.map((t) => ({ t, lista: "neo" as const })),
   ];
 
-  // ---- KPIs (em aberto = não finalizada) ----
+  // ---- Em aberto (exclui finalizadas) ----
   const abertos = marcados.filter((x) => !finalizada(x.t));
   const porLista = {
     avulso: abertos.filter((x) => x.lista === "avulso").length,
@@ -100,14 +102,20 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
     neo: abertos.filter((x) => x.lista === "neo").length,
   };
 
-  // ---- Série entrada × saída ----
+  // ---- Série entrada × saída (por período) ----
   const mapaEnt = new Map<string, number>();
   const mapaSai = new Map<string, number>();
   for (const { t } of marcados) {
     const ent = dataMs(t, "Data de Recebimento");
-    if (ent) mapaEnt.set(chavePeriodo(ent, periodo), (mapaEnt.get(chavePeriodo(ent, periodo)) ?? 0) + 1);
+    if (ent) {
+      const k = chavePeriodo(ent, periodo);
+      mapaEnt.set(k, (mapaEnt.get(k) ?? 0) + 1);
+    }
     const sai = dataMs(t, "Data de Saída");
-    if (sai) mapaSai.set(chavePeriodo(sai, periodo), (mapaSai.get(chavePeriodo(sai, periodo)) ?? 0) + 1);
+    if (sai) {
+      const k = chavePeriodo(sai, periodo);
+      mapaSai.set(k, (mapaSai.get(k) ?? 0) + 1);
+    }
   }
   const chaves = Array.from(new Set([...mapaEnt.keys(), ...mapaSai.keys()])).sort();
   const ultimas = chaves.slice(-6);
@@ -117,11 +125,12 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
     entradas: mapaEnt.get(k) ?? 0,
     saidas: mapaSai.get(k) ?? 0,
   }));
-  const chaveMesAtual = chavePeriodo(new Date(), "mes");
-  const entradasMes = Array.from(mapaEnt.entries()).filter(([k]) => k.startsWith(chaveMesAtual.slice(0, 7))).reduce((a, [, v]) => a + v, 0);
-  const saidasMes = Array.from(mapaSai.entries()).filter(([k]) => k.startsWith(chaveMesAtual.slice(0, 7))).reduce((a, [, v]) => a + v, 0);
+  // entradas/saídas do período CORRENTE (dia/semana/mês de hoje)
+  const chaveAtual = chavePeriodo(new Date(), periodo);
+  const entradas = mapaEnt.get(chaveAtual) ?? 0;
+  const saidas = mapaSai.get(chaveAtual) ?? 0;
 
-  // ---- Por empresa (cliente) ----
+  // ---- Por empresa (acumulado, todas as OS) ----
   const empresa = new Map<string, { total: number; lista: "cpfl" | "neo" | "avulso" }>();
   for (const { t, lista } of marcados) {
     const c = campo(t, "Cliente");
@@ -176,17 +185,14 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
 
   return {
     geradoEm: new Date().toISOString(),
-    kpis: {
-      emAberto: abertos.length,
-      porLista,
-      entradasMes,
-      saidasMes,
-      valorReceberTotal: recContrato + recAvulso,
-    },
-    serie: { periodo, pontos },
-    porEmpresa,
+    emAberto: abertos.length,
+    porLista,
     porTecnico,
     valoresReceber,
     esteira,
+    porEmpresa,
+    serie: { periodo, pontos },
+    entradas,
+    saidas,
   };
 }
