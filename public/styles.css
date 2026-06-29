@@ -16,7 +16,7 @@ body{
     radial-gradient(700px 420px at -5% 0%, rgba(59,130,246,.07), transparent 55%),
     var(--bg);
   color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.45;
-  padding:34px 26px 70px;-webkit-font-smoothing:antialiased;
+  padding:56px 26px 72px;-webkit-font-smoothing:antialiased;
   font-feature-settings:"tnum" 1;
 }
 .wrap{max-width:1200px;margin:0 auto}
