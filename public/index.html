@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel do Gestor — Centro de Reparos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></div>
+      <div><div class="ey">Powerconn · Centro de Reparos</div><h1>Painel do Gestor</h1></div>
+    </div>
+    <div class="ctrls">
+      <div class="seg" id="seg-periodo">
+        <button data-p="dia">Dia</button><button data-p="semana">Semana</button><button data-p="mes" class="on">Mês</button>
+      </div>
+      <span class="upd" id="upd">carregando…</span>
+    </div>
+  </div>
+
+  <div id="erro"></div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi"><div class="l">OS em aberto</div><div class="n tnum" id="kpi-aberto">—</div>
+      <div class="dotrow" id="kpi-split"></div></div>
+    <div class="kpi"><div class="l">Entradas no mês</div><div class="n tnum" id="kpi-entradas">—</div>
+      <div class="trend nt">por Data de Recebimento</div></div>
+    <div class="kpi"><div class="l">Saídas no mês</div><div class="n tnum" id="kpi-saidas">—</div>
+      <div class="trend nt" id="kpi-saldo">—</div></div>
+    <div class="kpi"><div class="l">Valor a receber</div><div class="n fin tnum" id="kpi-receber">—</div>
+      <div class="trend nt">contrato + avulso · pendente NF</div></div>
+  </div>
+
+  <!-- Série + empresa -->
+  <div class="grid g-72">
+    <div class="card first">
+      <div class="ch"><div><h3>Entrada × Saída</h3><div class="sub" id="serie-sub">por mês</div></div>
+        <span class="src">data_entrada · data_saida</span></div>
+      <div class="legend"><span><i style="background:var(--primary)"></i>Entradas</span><span><i style="background:var(--amber)"></i>Saídas</span></div>
+      <svg class="chart" id="chart" viewBox="0 0 600 210" preserveAspectRatio="none" role="img" aria-label="Entradas e saídas"></svg>
+    </div>
+    <div class="card first">
+      <div class="ch"><div><h3>OS por empresa</h3><div class="sub">quantitativo · filtrável</div></div></div>
+      <div class="chips" id="empresa-chips"></div>
+      <div class="bars" id="empresa-bars"></div>
+    </div>
+  </div>
+
+  <!-- Técnico + receber -->
+  <div class="grid g-11">
+    <div class="card">
+      <div class="ch"><div><h3>Carga por técnico</h3><div class="sub">OS em aberto por responsável</div></div>
+        <span class="src">campo Técnico</span></div>
+      <div class="bars" id="tecnico-bars"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><h3>Valores a receber</h3><div class="sub">pendente de NF</div></div>
+        <span class="src">soma Valor Total OS</span></div>
+      <div class="fin">
+        <div class="donut">
+          <svg width="170" height="170" viewBox="0 0 170 170" id="donut"></svg>
+          <div class="ctr"><div class="t">Total</div><div class="v tnum" id="donut-total">—</div></div>
+        </div>
+        <div class="br" id="receber-br"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Esteira -->
+  <div class="card">
+    <div class="ch"><div><h3>Esteira por status</h3><div class="sub">onde as OS estão acumuladas</div></div>
+      <span class="src">listas de contrato</span></div>
+    <div class="funnel" id="esteira"></div>
+  </div>
+
+  <div class="note">
+    <b>Valores a receber</b> soma o campo <b>Valor Total OS</b> das OS em status pendente de NF. OS sem orçamento/itemização
+    entram como zero — se a cobrança do contrato for fixa por OS, ajustar a regra em <code>metrics.ts</code>.
+  </div>
+
+  <footer><span>Painel do Gestor · gc-clickup-dashboard</span><span>Powerconn · Centro de Reparos</span></footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

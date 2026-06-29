@@ -1,0 +1,17 @@
+{
+  "name": "gc-clickup-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Painel do Gestor — Centro de Reparos. Gera metrics.json a partir do ClickUp e publica no GitHub Pages.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsx src/build.ts",
+    "dev": "tsx src/build.ts && npx --yes serve public"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}
