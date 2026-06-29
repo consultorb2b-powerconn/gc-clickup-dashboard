@@ -11,7 +11,6 @@
 </head>
 <body>
 <div class="wrap">
-
   <div class="top">
     <div class="brand">
       <div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" fill="currentColor"/></svg></div>
@@ -21,39 +20,35 @@
       <div class="seg" id="seg-periodo">
         <button data-p="dia">Dia</button><button data-p="semana">Semana</button><button data-p="mes" class="on">Mês</button>
       </div>
-      <span class="upd" id="upd">carregando…</span>
+      <span class="upd" id="upd"></span>
     </div>
   </div>
-
   <div id="erro"></div>
-
   <!-- KPIs -->
   <div class="kpis">
     <div class="kpi"><div class="l">OS em aberto</div><div class="n tnum" id="kpi-aberto">—</div>
       <div class="dotrow" id="kpi-split"></div></div>
-    <div class="kpi"><div class="l">Entradas no mês</div><div class="n tnum" id="kpi-entradas">—</div>
+    <div class="kpi"><div class="l" id="kpi-entradas-label">Entradas no mês</div><div class="n tnum" id="kpi-entradas">—</div>
       <div class="trend nt">por Data de Recebimento</div></div>
-    <div class="kpi"><div class="l">Saídas no mês</div><div class="n tnum" id="kpi-saidas">—</div>
+    <div class="kpi"><div class="l" id="kpi-saidas-label">Saídas no mês</div><div class="n tnum" id="kpi-saidas">—</div>
       <div class="trend nt" id="kpi-saldo">—</div></div>
     <div class="kpi"><div class="l">Valor a receber</div><div class="n fin tnum" id="kpi-receber">—</div>
       <div class="trend nt">contrato + avulso · pendente NF</div></div>
   </div>
-
-  <!-- Série + empresa -->
+  <!-- Empresa (largo) + série (estreito) -->
   <div class="grid g-72">
+    <div class="card first">
+      <div class="ch"><div><h3>OS por empresa</h3><div class="sub">quantitativo · filtrável</div></div></div>
+      <div class="chips" id="empresa-chips"></div>
+      <div class="bars" id="empresa-bars"></div>
+    </div>
     <div class="card first">
       <div class="ch"><div><h3>Entrada × Saída</h3><div class="sub" id="serie-sub">por mês</div></div>
         <span class="src">data_entrada · data_saida</span></div>
       <div class="legend"><span><i style="background:var(--primary)"></i>Entradas</span><span><i style="background:var(--amber)"></i>Saídas</span></div>
       <svg class="chart" id="chart" viewBox="0 0 600 210" preserveAspectRatio="none" role="img" aria-label="Entradas e saídas"></svg>
     </div>
-    <div class="card first">
-      <div class="ch"><div><h3>OS por empresa</h3><div class="sub">quantitativo · filtrável</div></div></div>
-      <div class="chips" id="empresa-chips"></div>
-      <div class="bars" id="empresa-bars"></div>
-    </div>
   </div>
-
   <!-- Técnico + receber -->
   <div class="grid g-11">
     <div class="card">
@@ -73,19 +68,16 @@
       </div>
     </div>
   </div>
-
   <!-- Esteira -->
   <div class="card">
     <div class="ch"><div><h3>Esteira por status</h3><div class="sub">onde as OS estão acumuladas</div></div>
       <span class="src">listas de contrato</span></div>
     <div class="funnel" id="esteira"></div>
   </div>
-
   <div class="note">
     <b>Valores a receber</b> soma o campo <b>Valor Total OS</b> das OS em status pendente de NF. OS sem orçamento/itemização
     entram como zero — se a cobrança do contrato for fixa por OS, ajustar a regra em <code>metrics.ts</code>.
   </div>
-
   <footer><span>Painel do Gestor · gc-clickup-dashboard</span><span>Powerconn · Centro de Reparos</span></footer>
 </div>
 <script src="app.js"></script>
