@@ -12,6 +12,7 @@ const LISTS = {
   avulso: process.env.CLICKUP_LIST_AVULSO ?? "901327620288",
   cpfl: process.env.CLICKUP_LIST_CPFL ?? "901327620289",
   neo: process.env.CLICKUP_LIST_NEOENERGIA ?? "901327620291",
+  conecta: process.env.CLICKUP_LIST_CONECTA ?? "901327705932",
 };
 
 /**
@@ -77,11 +78,11 @@ export interface Metrics {
   geradoEm: string;
   // snapshot (independente do período)
   emAberto: number;
-  porLista: { avulso: number; cpfl: number; neo: number };
+  porLista: { avulso: number; cpfl: number; neo: number; conecta: number };
   porTecnico: { nome: string; total: number }[];
   valoresReceber: { contrato: number; avulso: number; porStatus: { status: string; valor: number }[] };
   esteira: { status: string; total: number; tipo: string }[];
-  porEmpresa: { nome: string; total: number; contrato: "cpfl" | "neo" | "avulso" }[];
+  porEmpresa: { nome: string; total: number; contrato: "cpfl" | "neo" | "conecta" | "avulso" }[];
   // dependente do período selecionado
   serie: { periodo: Periodo; pontos: { chave: string; rotulo: string; entradas: number; saidas: number }[] };
   entradas: number; // entradas no período atual (dia/semana/mês corrente)
@@ -89,15 +90,17 @@ export interface Metrics {
 }
 
 export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
-  const [avulso, cpfl, neo] = await Promise.all([
+  const [avulso, cpfl, neo, conecta] = await Promise.all([
     fetchAllTasks(LISTS.avulso),
     fetchAllTasks(LISTS.cpfl),
     fetchAllTasks(LISTS.neo),
+    fetchAllTasks(LISTS.conecta),
   ]);
-  const marcados: { t: CuTask; lista: "avulso" | "cpfl" | "neo" }[] = [
+  const marcados: { t: CuTask; lista: "avulso" | "cpfl" | "neo" | "conecta" }[] = [
     ...avulso.map((t) => ({ t, lista: "avulso" as const })),
     ...cpfl.map((t) => ({ t, lista: "cpfl" as const })),
     ...neo.map((t) => ({ t, lista: "neo" as const })),
+    ...conecta.map((t) => ({ t, lista: "conecta" as const })),
   ];
 
   // ---- Em aberto (exclui finalizadas) ----
@@ -106,6 +109,7 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
     avulso: abertos.filter((x) => x.lista === "avulso").length,
     cpfl: abertos.filter((x) => x.lista === "cpfl").length,
     neo: abertos.filter((x) => x.lista === "neo").length,
+    conecta: abertos.filter((x) => x.lista === "conecta").length,
   };
 
   // ---- Série entrada × saída (por período) ----
@@ -137,7 +141,7 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
   const saidas = mapaSai.get(chaveAtual) ?? 0;
 
   // ---- Por empresa (acumulado, todas as OS) ----
-  const empresa = new Map<string, { total: number; lista: "cpfl" | "neo" | "avulso" }>();
+  const empresa = new Map<string, { total: number; lista: "cpfl" | "neo" | "conecta" | "avulso" }>();
   for (const { t, lista } of marcados) {
     const c = campo(t, "Cliente");
     if (!c) continue;
