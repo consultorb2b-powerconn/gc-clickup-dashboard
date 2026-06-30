@@ -41,7 +41,13 @@ function finalizada(t: CuTask): boolean {
   const tipo = t.status?.type ?? "";
   if (tipo === "closed" || tipo === "done") return true;
   const nome = (t.status?.status ?? "").toLowerCase();
-  return nome.includes("finalizado");
+  if (nome.includes("finalizado")) return true;
+  // GestãoClick é a fonte da verdade: OS já DESPACHADA/enviada não conta como
+  // aberta, mesmo que o status no ClickUp ainda esteja "ANÁLISE – MONTAR O.S."
+  // (caso típico das OS de contrato da Conecta: "FATURAR CONTRATO/ DESPACHADO").
+  const sit = (campo(t, "Situação GestãoClick") ?? "").toLowerCase();
+  if (sit.includes("despachado")) return true;
+  return false;
 }
 
 function dataMs(t: CuTask, nome: string): Date | null {
