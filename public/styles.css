@@ -3,7 +3,7 @@
   --border:#E7ECF3; --hair:#EFF2F6;
   --ink:#0E1B2E; --muted:#5C6B82; --faint:#94A3B6;
   --primary:#10B5AC; --primary-2:#0E9B93;
-  --cpfl:#3B82F6; --neo:#10B981; --avulso:#9AA7B8;
+  --cpfl:#3B82F6; --neo:#10B981; --avulso:#9AA7B8; --conecta:#8B5CF6;
   --amber:#F59E0B; --rose:#F43F5E;
   --sh-sm:0 1px 2px rgba(16,24,40,.05);
   --sh:0 1px 3px rgba(16,24,40,.05), 0 10px 24px -8px rgba(16,24,40,.10);
@@ -69,6 +69,7 @@ body{
 .f-cpfl{background:linear-gradient(90deg,#7eacff,var(--cpfl))}
 .f-neo{background:linear-gradient(90deg,#5fd9ad,var(--neo))}
 .f-grey{background:linear-gradient(90deg,#c2ccd9,var(--avulso))}
+.f-conecta{background:linear-gradient(90deg,#b79bfb,var(--conecta))}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
 .chip{font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:999px;padding:6px 13px;color:var(--muted);cursor:pointer;background:#fff}
 .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}

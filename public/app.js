@@ -1,7 +1,7 @@
 /* app.js — lê metrics.json (gerado pela Action) e desenha o painel. Sem backend. */
 const brl = (n) => "R$ " + (n || 0).toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 const brlShort = (n) => (n >= 1000 ? "R$ " + (n / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "k" : brl(n));
-const corLista = (c) => (c === "cpfl" ? "f-cpfl" : c === "neo" ? "f-neo" : "f-grey");
+const corLista = (c) => (c === "cpfl" ? "f-cpfl" : c === "neo" ? "f-neo" : c === "conecta" ? "f-conecta" : "f-grey");
 const el = (id) => document.getElementById(id);
 
 let periodoAtual = "mes";
@@ -36,7 +36,8 @@ function render() {
   el("kpi-split").innerHTML =
     '<span><i style="background:var(--avulso)"></i>' + m.porLista.avulso + '</span>' +
     '<span><i style="background:var(--cpfl)"></i>' + m.porLista.cpfl + '</span>' +
-    '<span><i style="background:var(--neo)"></i>' + m.porLista.neo + '</span>';
+    '<span><i style="background:var(--neo)"></i>' + m.porLista.neo + '</span>' +
+    '<span><i style="background:var(--conecta)"></i>' + (m.porLista.conecta || 0) + '</span>';
 
   // --- KPIs temporais: entradas/saídas no período selecionado ---
   const suf = SUFIXO[periodoAtual] || "";
@@ -83,8 +84,8 @@ function barRow(nome, valor, max, cls) {
 }
 
 function desenharEmpresa(lista) {
-  const chips = ["todas", "cpfl", "neo"];
-  const rotulo = { todas: "Todas", cpfl: "CPFL", neo: "NEO" };
+  const chips = ["todas", "cpfl", "neo", "conecta"];
+  const rotulo = { todas: "Todas", cpfl: "CPFL", neo: "NEO", conecta: "CONECTA" };
   el("empresa-chips").innerHTML = chips.map((c) => '<span class="chip ' + (c === empresaFiltro ? "on" : "") + '" data-f="' + c + '">' + rotulo[c] + '</span>').join("");
   el("empresa-chips").querySelectorAll(".chip").forEach((ch) =>
     ch.addEventListener("click", () => { empresaFiltro = ch.dataset.f; desenharEmpresa(DATA.porEmpresa); }));
