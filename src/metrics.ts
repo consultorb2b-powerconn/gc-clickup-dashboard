@@ -141,16 +141,32 @@ export async function buildMetrics(periodo: Periodo = "mes"): Promise<Metrics> {
   const saidas = mapaSai.get(chaveAtual) ?? 0;
 
   // ---- Por empresa (acumulado, todas as OS) ----
-  const empresa = new Map<string, { total: number; lista: "cpfl" | "neo" | "conecta" | "avulso" }>();
+  // Conta as OS de cada cliente POR LISTA e atribui o "contrato" à lista onde o
+  // cliente tem MAIS OS (plurality). Antes usava a 1ª lista vista, o que travava
+  // o cliente na ordem de iteração (avulso→cpfl→neo→conecta): um cliente CONECTA
+  // com qualquer OS solta numa lista anterior nunca era marcado como "conecta".
+  type ListaOS = "cpfl" | "neo" | "conecta" | "avulso";
+  const PRIORIDADE: ListaOS[] = ["conecta", "neo", "cpfl", "avulso"];
+  const empresa = new Map<string, { total: number; porLista: Record<ListaOS, number> }>();
   for (const { t, lista } of marcados) {
     const c = campo(t, "Cliente");
     if (!c) continue;
-    const cur = empresa.get(c) ?? { total: 0, lista };
+    const cur = empresa.get(c) ?? { total: 0, porLista: { cpfl: 0, neo: 0, conecta: 0, avulso: 0 } };
     cur.total++;
+    cur.porLista[lista]++;
     empresa.set(c, cur);
   }
+  // lista com mais OS; empate favorece contrato na ordem de PRIORIDADE.
+  const contratoDominante = (pl: Record<ListaOS, number>): ListaOS => {
+    let melhor: ListaOS = "avulso";
+    let melhorN = -1;
+    for (const k of PRIORIDADE) {
+      if (pl[k] > melhorN) { melhor = k; melhorN = pl[k]; }
+    }
+    return melhor;
+  };
   const porEmpresa = Array.from(empresa.entries())
-    .map(([nome, v]) => ({ nome, total: v.total, contrato: v.lista }))
+    .map(([nome, v]) => ({ nome, total: v.total, contrato: contratoDominante(v.porLista) }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 12);
 
